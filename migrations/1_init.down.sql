@@ -1,0 +1,3 @@
+DROP TABLE IF EXISTS user;
+DROP TABLE IF EXISTS vault;
+DROP TABLE IF EXISTS encryption_key;
