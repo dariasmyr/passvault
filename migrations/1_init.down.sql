@@ -1,2 +1,2 @@
-DROP TABLE IF EXISTS vault;
+DROP TABLE IF EXISTS entry;
 DROP TABLE IF EXISTS encryption_key;

@@ -8,8 +8,8 @@ CREATE TABLE IF NOT EXISTS encryption_key
     key_part     TEXT NOT NULL
     );
 
--- Vault Table
-CREATE TABLE IF NOT EXISTS vault
+-- Entry Table
+CREATE TABLE IF NOT EXISTS entry
 (
     id           INTEGER PRIMARY KEY AUTOINCREMENT,
     created_at   TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,

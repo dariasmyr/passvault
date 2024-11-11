@@ -31,10 +31,10 @@ func New(storagePath string) (*Storage, error) {
 	return &Storage{db: db}, nil
 }
 
-// CreateEntry inserts a new entry into the vault table
+// CreateEntry inserts a new entry into the Entry table
 func (s *Storage) CreateEntry(ctx context.Context, accountID int64, entryType, entryData string) (int64, error) {
 	const op = "storage.sqlite.CreateEntry"
-	query := `INSERT INTO vault (account_id, entry_type, entry_data, created_at, updated_at) VALUES (?, ?, ?, ?, ?)`
+	query := `INSERT INTO entry (account_id, entry_type, entry_data, created_at, updated_at) VALUES (?, ?, ?, ?, ?)`
 	stmt, err := s.db.Prepare(query)
 	if err != nil {
 		return 0, fmt.Errorf("%s: %w", op, err)
@@ -52,80 +52,80 @@ func (s *Storage) CreateEntry(ctx context.Context, accountID int64, entryType, e
 	return entryID, nil
 }
 
-// GetVault retrieves a vault from the vault table by vault ID
-func (s *Storage) GetVault(ctx context.Context, vaultID int64) (*models.Vault, error) {
-	const op = "storage.sqlite.GetVault"
-	query := `SELECT id, account_id, entry_type, entry_data, created_at, updated_at FROM vault WHERE id = ?`
+// GetEntry retrieves a entry from the entry table by entry ID
+func (s *Storage) GetEntry(ctx context.Context, entryID int64) (*models.Entry, error) {
+	const op = "storage.sqlite.GetEntry"
+	query := `SELECT id, account_id, entry_type, entry_data, created_at, updated_at FROM entry WHERE id = ?`
 	stmt, err := s.db.Prepare(query)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 	defer stmt.Close()
 
-	var vault models.Vault
-	err = stmt.QueryRowContext(ctx, vaultID).Scan(&vault.ID, &vault.AccountId, &vault.EntryType, &vault.EntryData, &vault.CreatedAt, &vault.UpdatedAt)
+	var entry models.Entry
+	err = stmt.QueryRowContext(ctx, entryID).Scan(&entry.ID, &entry.AccountId, &entry.EntryType, &entry.EntryData, &entry.CreatedAt, &entry.UpdatedAt)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, fmt.Errorf("%s: %w", op, storage.ErrVaultNotFound)
+			return nil, fmt.Errorf("%s: %w", op, storage.ErrEntryNotFound)
 		}
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
-	return &vault, nil
+	return &entry, nil
 }
 
-// UpdateVault updates an existing vault in the vault table by ID
-func (s *Storage) UpdateVault(ctx context.Context, vaultID int64, vaultType, vaultData string) error {
-	const op = "storage.sqlite.UpdateVault"
-	query := `UPDATE vault SET entry_type = ?, entry_data = ?, updated_at = ? WHERE id = ?`
+// UpdateEntries updates an existing entry in the entry table by ID
+func (s *Storage) UpdateEntry(ctx context.Context, entryID int64, entryType, entryData string) error {
+	const op = "storage.sqlite.UpdateEntry"
+	query := `UPDATE entry SET entry_type = ?, entry_data = ?, updated_at = ? WHERE id = ?`
 	stmt, err := s.db.Prepare(query)
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
 	defer stmt.Close()
 
-	_, err = stmt.ExecContext(ctx, vaultType, vaultData, time.Now(), vaultID)
+	_, err = stmt.ExecContext(ctx, entryType, entryData, time.Now(), entryID)
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
 	return nil
 }
 
-// DeleteVault removes a vault from the vault table by ID
-func (s *Storage) DeleteVault(ctx context.Context, vaultID int64) error {
-	const op = "storage.sqlite.DeleteVault"
-	query := `DELETE FROM vault WHERE id = ?`
+// DeleteEntries removes a entry from the entry table by ID
+func (s *Storage) DeleteEntry(ctx context.Context, entryID int64) error {
+	const op = "storage.sqlite.DeleteEntry"
+	query := `DELETE FROM entry WHERE id = ?`
 	stmt, err := s.db.Prepare(query)
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
 	defer stmt.Close()
 
-	_, err = stmt.ExecContext(ctx, vaultID)
+	_, err = stmt.ExecContext(ctx, entryID)
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
 	return nil
 }
 
-// ListVaults retrieves all vaults for a given user from the vault table
-func (s *Storage) ListEntries(ctx context.Context, accountID int64) ([]*models.Vault, error) {
+// ListEntries retrieves all entries for a given userId from the entry table
+func (s *Storage) ListEntries(ctx context.Context, accountID int64) ([]*models.Entry, error) {
 	const op = "storage.sqlite.ListEntries"
-	query := `SELECT id, user_id, entry_type, entry_data, created_at, updated_at FROM vault WHERE account_id = ?`
+	query := `SELECT id, user_id, entry_type, entry_data, created_at, updated_at FROM entry WHERE account_id = ?`
 	rows, err := s.db.QueryContext(ctx, query, accountID)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 	defer rows.Close()
 
-	var vaults []*models.Vault
+	var entries []*models.Entry
 	for rows.Next() {
-		var vault models.Vault
-		if err := rows.Scan(&vault.ID, &vault.AccountId, &vault.EntryType, &vault.EntryData, &vault.CreatedAt, &vault.UpdatedAt); err != nil {
+		var entry models.Entry
+		if err := rows.Scan(&entry.ID, &entry.AccountId, &entry.EntryType, &entry.EntryData, &entry.CreatedAt, &entry.UpdatedAt); err != nil {
 			return nil, fmt.Errorf("%s: %w", op, err)
 		}
-		vaults = append(vaults, &vault)
+		entries = append(entries, &entry)
 	}
-	return vaults, nil
+	return entries, nil
 }
 
 // StoreKeyPart inserts a new key part for a user into the encryption_key table
