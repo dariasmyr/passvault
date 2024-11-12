@@ -1,6 +1,9 @@
 package save
 
-import resp "passvault/internal/lib/api/response"
+import (
+	"context"
+	resp "passvault/internal/lib/api/response"
+)
 
 type Request struct {
 	EntryType string `json:"entry_type" validate:"required"`
@@ -10,4 +13,8 @@ type Request struct {
 type Response struct {
 	resp.Response
 	ID int64 `json:"id"`
+}
+
+type EntrySaver interface {
+	SaveEntry(ctx context.Context, entryType, entryData string) (int64, error)
 }
