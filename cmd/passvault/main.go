@@ -5,8 +5,8 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"log/slog"
 	"os"
-	mwLogger "passvault/cmd/passvault/middleware/logger"
 	"passvault/config"
+	mwLogger "passvault/internal/http-server/middlewares/logger"
 )
 
 const (
