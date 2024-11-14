@@ -69,10 +69,12 @@ func New(log *slog.Logger, entrySaver EntrySaver) http.HandlerFunc {
 		log.Info("request body decoded", slog.Any("req", req))
 
 		if err := validator.New().Struct(req); err != nil {
-			validateErr := err.(validator.ValidationErrors)
-			log.Error("invalid request", sl.Err(err))
-			render.JSON(w, r, resp.ValidationError(validateErr))
-			return
+			var validateErr validator.ValidationErrors
+			if errors.As(err, &validateErr) {
+				log.Error("invalid request", sl.Err(err))
+				render.JSON(w, r, resp.ValidationError(validateErr))
+				return
+			}
 		}
 
 		// Use AccountID from claims if needed in saving process
