@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"passvault/internal/lib/jwt"
 	"passvault/internal/lib/logger/sl"
+	"time"
 )
 
 type UserClaims struct {
@@ -43,6 +44,12 @@ func New(log *slog.Logger, appSecret string) func(next http.Handler) http.Handle
 				ctx := context.WithValue(r.Context(), ErrInvalidToken, err)
 				http.Error(w, "Unauthorized", http.StatusUnauthorized)
 				next.ServeHTTP(w, r.WithContext(ctx))
+				return
+			}
+
+			if claims.ExpiresAt.Before(time.Now()) {
+				log.Warn("token expired", sl.Err(err))
+				http.Error(w, "Token expired", http.StatusUnauthorized)
 				return
 			}
 
