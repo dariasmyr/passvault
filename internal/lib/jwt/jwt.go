@@ -3,6 +3,8 @@ package jwt
 import (
 	"fmt"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
+	"time"
 )
 
 type CustomClaims struct {
@@ -13,6 +15,7 @@ type CustomClaims struct {
 	jwt.RegisteredClaims
 }
 
+// ParseToken parses and validates a JWT string using the given secret key.
 func ParseToken(tokenString string, secret string) (*CustomClaims, error) {
 	token, err := jwt.ParseWithClaims(tokenString, &CustomClaims{}, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
@@ -35,4 +38,31 @@ func ParseToken(tokenString string, secret string) (*CustomClaims, error) {
 	}
 
 	return claims, nil
+}
+
+func generateJTI() string {
+	return uuid.New().String()
+}
+
+const duration = 1 * time.Hour
+
+func CreateMockToken(secret string) string {
+	claims := CustomClaims{
+		AccountID: 123,
+		Email:     "test@example.com",
+		Role:      1,
+		AppID:     1,
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(duration)),
+			ID:        generateJTI(),
+		},
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	tokenString, err := token.SignedString([]byte(secret))
+	if err != nil {
+		return ""
+	}
+
+	return tokenString
 }
