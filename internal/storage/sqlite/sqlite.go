@@ -33,7 +33,7 @@ func New(storagePath string) (*Storage, error) {
 
 // SaveEntry inserts a new entry into the Entry table
 func (s *Storage) SaveEntry(ctx context.Context, accountID int64, entryType, entryData string) (int64, error) {
-	const op = "storage.sqlite.CreateEntry"
+	const op = "storage.sqlite.SaveEntry"
 	query := `INSERT INTO entry (account_id, entry_type, entry_data, created_at, updated_at) VALUES (?, ?, ?, ?, ?)`
 	stmt, err := s.db.Prepare(query)
 	if err != nil {
