@@ -13,3 +13,17 @@ func (m *MockEntryGetter) GetEntry(accountId int64, entryID int64) (get.Entry, e
 	args := m.Called(accountId, entryID)
 	return args.Get(0).(get.Entry), args.Error(1)
 }
+
+type mockConstructorTestingTEntryGetter interface {
+	mock.TestingT
+	Cleanup(func())
+}
+
+func NewEntryGetter(t mockConstructorTestingTEntryGetter) *MockEntryGetter {
+	mock := &MockEntryGetter{}
+	mock.Mock.Test(t)
+
+	t.Cleanup(func() { mock.AssertExpectations(t) })
+
+	return mock
+}
