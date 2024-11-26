@@ -1,4 +1,4 @@
-package app
+package storage_app
 
 import (
 	"passvault/internal/storage/sqlite"
