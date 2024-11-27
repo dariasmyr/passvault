@@ -55,7 +55,7 @@ func TestSaveHandler(t *testing.T) {
 			urlSaverMock := mocks.NewEntrySaver(t)
 
 			if tc.respError == "" || tc.mockError != nil {
-				urlSaverMock.On("SaveEntry", tc.entryType, mock.AnythingOfType("string")).
+				urlSaverMock.On("SaveEntry", int64(123), tc.entryType, mock.AnythingOfType("string")).
 					Return(int64(1), tc.mockError).
 					Once()
 			}
@@ -71,7 +71,7 @@ func TestSaveHandler(t *testing.T) {
 
 			rr := httptest.NewRecorder()
 
-			//handler.ServeHTTP(rr, req)
+			//handler.ServeHTTP(rr, req) // Call the handler wrapped in the middleware instead
 			Middleware(handler, rr, req)
 
 			require.Equal(t, rr.Code, http.StatusOK)
