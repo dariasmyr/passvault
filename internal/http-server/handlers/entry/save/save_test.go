@@ -52,17 +52,17 @@ func TestSaveHandler(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			urlSaverMock := mocks.NewEntrySaver(t)
+			entrySaverMock := mocks.NewEntrySaver(t)
 
 			if tc.respError == "" || tc.mockError != nil {
-				urlSaverMock.On("SaveEntry", int64(123), tc.entryType, mock.AnythingOfType("string")).
+				entrySaverMock.On("SaveEntry", int64(123), tc.entryType, mock.AnythingOfType("string")).
 					Return(int64(1), tc.mockError).
 					Once()
 			}
 
 			handler := save.New(slog.New(
 				slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}),
-			), urlSaverMock)
+			), entrySaverMock)
 
 			input := fmt.Sprintf(`{"entry_type": "%s", "entry_data": "%s"}`, tc.entryType, tc.entryData)
 
