@@ -35,7 +35,7 @@ func TestSaveHandler(t *testing.T) {
 			name:      "Empty Data",
 			entryType: "password",
 			entryData: "",
-			respError: "field entryData is a required field",
+			respError: "field EntryData is a required field",
 		},
 		{
 			name:      "SaveEntry Error",
