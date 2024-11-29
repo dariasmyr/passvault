@@ -3,6 +3,7 @@ package get_test
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/go-chi/chi/v5"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
@@ -55,18 +56,18 @@ func TestGetHandler(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			mockEntryGetter := mocks.NewEntryGetter(t)
-			mockEntryGetter.On("GetEntry", int64(123), int64(1)).Return(tc.mockEntry, tc.mockError)
+			mockEntryGetter.On("GetEntry", int64(123), int64(1)).Return(&tc.mockEntry, tc.mockError)
 
+			router := chi.NewRouter()
 			handler := get.New(slog.New(
 				slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}),
 			), mockEntryGetter)
+			router.Get("/{entryID}", handler)
 
-			req, err := http.NewRequest(http.MethodGet, "/"+tc.entryID, nil)
-			require.NoError(t, err)
-
+			req := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/%s", tc.entryID), nil)
 			rr := httptest.NewRecorder()
 
-			Middleware(handler, rr, req)
+			Middleware(router, rr, req)
 
 			resp := rr.Result()
 			defer resp.Body.Close()
