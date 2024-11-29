@@ -46,6 +46,7 @@ func New(log *slog.Logger, entryGetter EntryGetter) http.HandlerFunc {
 		id, err := strconv.ParseInt(entryID, 10, 64)
 		if err != nil {
 			log.Error("invalid entryID parameter", slog.String("entryID", entryID))
+			w.WriteHeader(http.StatusBadRequest)
 			render.JSON(w, r, resp.Response{
 				Status: resp.StatusError,
 				Error:  "invalid entryID",
@@ -56,6 +57,7 @@ func New(log *slog.Logger, entryGetter EntryGetter) http.HandlerFunc {
 		entry, err := entryGetter.GetEntry(ctx, claims.AccountID, id)
 		if err != nil {
 			log.Error("failed to retrieve entry", slog.Int64("entryID", id), sl.Err(err))
+			w.WriteHeader(http.StatusInternalServerError)
 			render.JSON(w, r, resp.Error("failed to retrieve entry"))
 			return
 		}

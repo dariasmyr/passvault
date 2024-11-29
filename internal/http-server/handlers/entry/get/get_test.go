@@ -56,7 +56,10 @@ func TestGetHandler(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			mockEntryGetter := mocks.NewEntryGetter(t)
-			mockEntryGetter.On("GetEntry", int64(123), int64(1)).Return(&tc.mockEntry, tc.mockError)
+
+			if tc.name != "Invalid Entry ID" {
+				mockEntryGetter.On("GetEntry", int64(123), int64(1)).Return(&tc.mockEntry, tc.mockError)
+			}
 
 			router := chi.NewRouter()
 			handler := get.New(slog.New(
