@@ -9,9 +9,11 @@ import (
 	"os"
 	"os/signal"
 	"passvault/config"
+	"passvault/internal/http-server/handlers/entry/get"
+	"passvault/internal/http-server/handlers/entry/save"
 	mwLogger "passvault/internal/http-server/middlewares/logger"
 	"passvault/internal/lib/logger/sl"
-	storage "passvault/internal/storage-app"
+	storage "passvault/internal/storage/sqlite"
 	"syscall"
 	"time"
 )
@@ -25,12 +27,12 @@ const (
 func main() {
 	cfg := config.MustLoad()
 
-	storage, err := storage.NewStorageApp(cfg.StoragePath)
+	storage, err := storage.New(cfg.StoragePath)
 	if err != nil {
 		panic(err)
 	}
 
-	defer storage.Stop()
+	defer storage.Close()
 
 	log := setupLogger(cfg.Env)
 
@@ -47,7 +49,9 @@ func main() {
 	router.Use(middleware.Recoverer)
 	router.Use(middleware.URLFormat)
 
-	// TODO: add RESTy routes
+	router.Post("/save", save.New(log, storage))
+
+	router.Get("/{entryId}", get.New(log, storage))
 
 	log.Info("starting server", slog.String("address", cfg.Address))
 
@@ -83,7 +87,7 @@ func main() {
 		return
 	}
 
-	if err := storage.Stop(); err != nil {
+	if err := storage.Close(); err != nil {
 		log.Error("failed to stop storage", sl.Err(err))
 	}
 

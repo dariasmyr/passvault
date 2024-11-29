@@ -1,6 +1,7 @@
 package save
 
 import (
+	"context"
 	"errors"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/render"
@@ -24,12 +25,14 @@ type Response struct {
 }
 
 type EntrySaver interface {
-	SaveEntry(accountId int64, entryType, entryData string) (int64, error)
+	SaveEntry(ctx context.Context, accountId int64, entryType, entryData string) (int64, error)
 }
 
 func New(log *slog.Logger, entrySaver EntrySaver) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "handlers.entry.save.New"
+
+		ctx := r.Context()
 
 		log = log.With(
 			slog.String("op", op),
@@ -78,7 +81,7 @@ func New(log *slog.Logger, entrySaver EntrySaver) http.HandlerFunc {
 		}
 
 		// Use AccountID from claims if needed in saving process
-		id, err := entrySaver.SaveEntry(claims.AccountID, req.EntryType, req.EntryData)
+		id, err := entrySaver.SaveEntry(ctx, claims.AccountID, req.EntryType, req.EntryData)
 		if err != nil {
 			log.Error("failed to save entry", sl.Err(err))
 			render.JSON(w, r, resp.Error("failed to save entry"))

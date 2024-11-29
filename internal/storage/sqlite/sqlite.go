@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"passvault/internal/domain/models"
+	"passvault/internal/http-server/handlers/entry/get"
 	"passvault/internal/storage"
 	"time"
 )
@@ -53,7 +54,7 @@ func (s *Storage) SaveEntry(ctx context.Context, accountID int64, entryType, ent
 }
 
 // GetEntry retrieves a entry from the entry table by entry ID
-func (s *Storage) GetEntry(ctx context.Context, entryID int64) (*models.Entry, error) {
+func (s *Storage) GetEntry(ctx context.Context, accountID int64, entryID int64) (*get.Entry, error) {
 	const op = "storage.sqlite.GetEntry"
 	query := `SELECT id, account_id, entry_type, entry_data, created_at, updated_at FROM entry WHERE id = ?`
 	stmt, err := s.db.Prepare(query)
@@ -70,7 +71,15 @@ func (s *Storage) GetEntry(ctx context.Context, entryID int64) (*models.Entry, e
 		}
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
-	return &entry, nil
+	if entry.AccountId != accountID {
+		return nil, fmt.Errorf("%s: %w", op, storage.ErrEntryNotFound)
+	}
+	return &get.Entry{
+		ID:        entry.ID,
+		AccountId: entry.AccountId,
+		EntryType: entry.EntryType,
+		EntryData: entry.EntryData,
+	}, nil
 }
 
 // UpdateEntries updates an existing entry in the entry table by ID

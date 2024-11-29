@@ -1,6 +1,7 @@
 package get
 
 import (
+	"context"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/render"
@@ -14,17 +15,20 @@ import (
 
 type Entry struct {
 	ID        int64  `json:"id"`
+	AccountId int64  `json:"account_id"`
 	EntryType string `json:"entry_type"`
 	EntryData string `json:"entry_data"`
 }
 
 type EntryGetter interface {
-	GetEntry(accountId int64, entryID int64) (Entry, error)
+	GetEntry(ctx context.Context, accountID int64, entryID int64) (*Entry, error)
 }
 
 func New(log *slog.Logger, entryGetter EntryGetter) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "handlers.entry.get.New"
+
+		ctx := r.Context()
 
 		log = log.With(
 			slog.String("op", op),
@@ -49,7 +53,7 @@ func New(log *slog.Logger, entryGetter EntryGetter) http.HandlerFunc {
 			return
 		}
 
-		entry, err := entryGetter.GetEntry(claims.AccountID, id)
+		entry, err := entryGetter.GetEntry(ctx, claims.AccountID, id)
 		if err != nil {
 			log.Error("failed to retrieve entry", slog.Int64("entryID", id), sl.Err(err))
 			render.JSON(w, r, resp.Error("failed to retrieve entry"))
