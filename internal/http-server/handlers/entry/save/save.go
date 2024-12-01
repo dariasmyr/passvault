@@ -12,6 +12,7 @@ import (
 	authrest "passvault/internal/http-server/middlewares/auth"
 	resp "passvault/internal/lib/api/response"
 	"passvault/internal/lib/logger/sl"
+	"time"
 )
 
 type Request struct {
@@ -28,21 +29,25 @@ type EntrySaver interface {
 	SaveEntry(ctx context.Context, accountId int64, entryType, entryData string) (int64, error)
 }
 
-func New(log *slog.Logger, entrySaver EntrySaver) http.HandlerFunc {
+func New(log *slog.Logger, entrySaver EntrySaver, timeout time.Duration) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "handlers.entry.save.New"
 
-		ctx := r.Context()
+		ctx, cancel := context.WithTimeout(r.Context(), timeout)
+		defer cancel()
 
 		log = log.With(
 			slog.String("op", op),
 			slog.String("request_id", middleware.GetReqID(r.Context())),
 		)
 
-		// Retrieve UserClaims from context
-		claims, ok := r.Context().Value(authrest.UserClaimsKey).(*authrest.UserClaims)
-		if !ok || claims == nil {
-			log.Error("unauthorized access: user claims not found in context")
+		if err := authrest.GetAuthErrorFromContext(r.Context()); err != nil {
+			http.Error(w, err.Error(), http.StatusUnauthorized)
+			return
+		}
+
+		claims, err := authrest.GetUserClaimsFromContext(r.Context())
+		if err != nil {
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return
 		}
@@ -51,8 +56,9 @@ func New(log *slog.Logger, entrySaver EntrySaver) http.HandlerFunc {
 		log = log.With(slog.Int64("account_id", claims.AccountID))
 
 		var req Request
-		err := render.DecodeJSON(r.Body, &req)
-		if errors.Is(err, io.EOF) {
+		var decodeErr error
+		decodeErr = render.DecodeJSON(r.Body, &req)
+		if errors.Is(decodeErr, io.EOF) {
 			log.Error("request body is empty")
 			render.JSON(w, r, resp.Response{
 				Status: resp.StatusError,
@@ -60,8 +66,8 @@ func New(log *slog.Logger, entrySaver EntrySaver) http.HandlerFunc {
 			})
 			return
 		}
-		if err != nil {
-			log.Error("failed to decode request body", sl.Err(err))
+		if decodeErr != nil {
+			log.Error("failed to decode request body", sl.Err(decodeErr))
 			render.JSON(w, r, resp.Response{
 				Status: resp.StatusError,
 				Error:  "failed to decode request",
@@ -80,7 +86,15 @@ func New(log *slog.Logger, entrySaver EntrySaver) http.HandlerFunc {
 			}
 		}
 
-		// Use AccountID from claims if needed in saving process
+		select {
+		case <-ctx.Done():
+			log.Error("request context cancelled", sl.Err(ctx.Err()))
+			w.WriteHeader(http.StatusRequestTimeout)
+			render.JSON(w, r, resp.Error("request timed out"))
+			return
+		default:
+		}
+
 		id, err := entrySaver.SaveEntry(ctx, claims.AccountID, req.EntryType, req.EntryData)
 		if err != nil {
 			log.Error("failed to save entry", sl.Err(err))
