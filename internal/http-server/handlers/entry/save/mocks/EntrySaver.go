@@ -1,6 +1,7 @@
 package mocks_test
 
 import (
+	"context"
 	"github.com/stretchr/testify/mock"
 )
 
@@ -8,8 +9,8 @@ type MockEntrySaver struct {
 	mock.Mock
 }
 
-func (m *MockEntrySaver) SaveEntry(accountId int64, entryType, entryData string) (int64, error) {
-	args := m.Called(accountId, entryType, entryData)
+func (m *MockEntrySaver) SaveEntry(ctx context.Context, accountId int64, entryType, entryData string) (int64, error) {
+	args := m.Called(ctx, accountId, entryType, entryData)
 	return args.Get(0).(int64), args.Error(1)
 }
 
