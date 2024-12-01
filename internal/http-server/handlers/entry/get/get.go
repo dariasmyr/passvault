@@ -2,6 +2,7 @@ package get
 
 import (
 	"context"
+	"errors"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/render"
@@ -11,6 +12,7 @@ import (
 	resp "passvault/internal/lib/api/response"
 	"passvault/internal/lib/logger/sl"
 	"strconv"
+	"time"
 )
 
 type Entry struct {
@@ -28,16 +30,21 @@ func New(log *slog.Logger, entryGetter EntryGetter) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "handlers.entry.get.New"
 
-		ctx := r.Context()
+		ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
+		defer cancel()
 
 		log = log.With(
 			slog.String("op", op),
 			slog.String("request_id", middleware.GetReqID(r.Context())),
 		)
 
-		claims, ok := r.Context().Value(authrest.UserClaimsKey).(*authrest.UserClaims)
-		if !ok || claims == nil {
-			log.Error("unauthorized access: user claims not found in context")
+		if err := authrest.GetAuthErrorFromContext(r.Context()); err != nil {
+			http.Error(w, err.Error(), http.StatusUnauthorized)
+			return
+		}
+
+		claims, err := authrest.GetUserClaimsFromContext(r.Context())
+		if err != nil {
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return
 		}
@@ -54,8 +61,23 @@ func New(log *slog.Logger, entryGetter EntryGetter) http.HandlerFunc {
 			return
 		}
 
+		select {
+		case <-ctx.Done():
+			log.Error("request context cancelled", sl.Err(ctx.Err()))
+			w.WriteHeader(http.StatusRequestTimeout)
+			render.JSON(w, r, resp.Error("request timed out"))
+			return
+		default:
+		}
+
 		entry, err := entryGetter.GetEntry(ctx, claims.AccountID, id)
 		if err != nil {
+			if errors.Is(err, context.DeadlineExceeded) {
+				log.Error("request timeout", slog.Int64("entryID", id))
+				w.WriteHeader(http.StatusGatewayTimeout)
+				render.JSON(w, r, resp.Error("request timed out"))
+				return
+			}
 			log.Error("failed to retrieve entry", slog.Int64("entryID", id), sl.Err(err))
 			w.WriteHeader(http.StatusInternalServerError)
 			render.JSON(w, r, resp.Error("failed to retrieve entry"))
