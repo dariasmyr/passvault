@@ -26,11 +26,11 @@ type EntryGetter interface {
 	GetEntry(ctx context.Context, accountID int64, entryID int64) (*Entry, error)
 }
 
-func New(log *slog.Logger, entryGetter EntryGetter) http.HandlerFunc {
+func New(log *slog.Logger, entryGetter EntryGetter, timeout time.Duration) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "handlers.entry.get.New"
 
-		ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
+		ctx, cancel := context.WithTimeout(r.Context(), timeout)
 		defer cancel()
 
 		log = log.With(
