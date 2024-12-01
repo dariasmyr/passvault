@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/go-chi/chi/v5"
+	"github.com/stretchr/testify/mock"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
@@ -58,7 +59,7 @@ func TestGetHandler(t *testing.T) {
 			mockEntryGetter := mocks.NewEntryGetter(t)
 
 			if tc.name != "Invalid Entry ID" {
-				mockEntryGetter.On("GetEntry", int64(123), int64(1)).Return(&tc.mockEntry, tc.mockError)
+				mockEntryGetter.On("GetEntry", mock.AnythingOfType("*context.timerCtx"), int64(123), int64(1)).Return(&tc.mockEntry, tc.mockError)
 			}
 
 			router := chi.NewRouter()
