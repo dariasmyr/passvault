@@ -138,8 +138,8 @@ func (s *Storage) ListEntries(ctx context.Context, accountID int64) ([]*models.E
 }
 
 // StoreKeyPart inserts a new key part for a user into the encryption_key table
-func (s *Storage) StoreKeyPart(ctx context.Context, accountID int64, keyPart string) (int64, error) {
-	const op = "storage.sqlite.StoreKeyPart"
+func (s *Storage) SaveKeyPart(ctx context.Context, accountID int64, keyPart string) (int64, error) {
+	const op = "storage.sqlite.SaveKeyPart"
 	query := `INSERT INTO encryption_key (account_id, key_part, created_at, updated_at) VALUES (?, ?, ?, ?)`
 	stmt, err := s.db.Prepare(query)
 	if err != nil {
