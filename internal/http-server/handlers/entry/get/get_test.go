@@ -14,6 +14,7 @@ import (
 	authrest "passvault/internal/http-server/middlewares/auth"
 	"passvault/internal/lib/jwt"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -65,7 +66,7 @@ func TestGetHandler(t *testing.T) {
 			router := chi.NewRouter()
 			handler := get.New(slog.New(
 				slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}),
-			), mockEntryGetter)
+			), mockEntryGetter, 5*time.Second)
 			router.Get("/{entryID}", handler)
 
 			req := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/%s", tc.entryID), nil)

@@ -16,6 +16,7 @@ import (
 	authrest "passvault/internal/http-server/middlewares/auth"
 	"passvault/internal/lib/jwt"
 	"testing"
+	"time"
 )
 
 func TestSaveHandler(t *testing.T) {
@@ -55,14 +56,14 @@ func TestSaveHandler(t *testing.T) {
 			entrySaverMock := mocks.NewEntrySaver(t)
 
 			if tc.respError == "" || tc.mockError != nil {
-				entrySaverMock.On("SaveEntry", int64(123), tc.entryType, mock.AnythingOfType("string")).
+				entrySaverMock.On("SaveEntry", mock.AnythingOfType("*context.timerCtx"), int64(123), tc.entryType, mock.AnythingOfType("string")).
 					Return(int64(1), tc.mockError).
 					Once()
 			}
 
 			handler := save.New(slog.New(
 				slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}),
-			), entrySaverMock)
+			), entrySaverMock, 5*time.Second)
 
 			input := fmt.Sprintf(`{"entry_type": "%s", "entry_data": "%s"}`, tc.entryType, tc.entryData)
 
