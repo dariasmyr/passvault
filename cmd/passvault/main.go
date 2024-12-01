@@ -36,6 +36,16 @@ func main() {
 
 	log := setupLogger(cfg.Env)
 
+	timeout := time.Duration(cfg.HTTPServer.Timeout) * time.Second
+	if timeout == 0 {
+		timeout = 5 * time.Second
+	}
+
+	idleTimeout := time.Duration(cfg.HTTPServer.IdleTimeout) * time.Second
+	if idleTimeout == 0 {
+		idleTimeout = 60 * time.Second
+	}
+
 	log = log.With(slog.String("env", cfg.Env))
 
 	log.Info("initializing server", slog.String("address", cfg.Address))
@@ -49,9 +59,9 @@ func main() {
 	router.Use(middleware.Recoverer)
 	router.Use(middleware.URLFormat)
 
-	router.Post("/save", save.New(log, storage))
+	router.Post("/save", save.New(log, storage, timeout))
 
-	router.Get("/{entryId}", get.New(log, storage))
+	router.Get("/{entryId}", get.New(log, storage, timeout))
 
 	log.Info("starting server", slog.String("address", cfg.Address))
 
@@ -61,9 +71,9 @@ func main() {
 	srv := &http.Server{
 		Addr:         cfg.Address,
 		Handler:      router,
-		ReadTimeout:  cfg.HTTPServer.Timeout,
-		WriteTimeout: cfg.HTTPServer.Timeout,
-		IdleTimeout:  cfg.HTTPServer.IdleTimeout,
+		ReadTimeout:  timeout,
+		WriteTimeout: timeout,
+		IdleTimeout:  idleTimeout,
 	}
 
 	go func() {
@@ -77,8 +87,7 @@ func main() {
 	<-done
 	log.Info("stopping server")
 
-	// TODO: move timeout to config
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
 	if err := srv.Shutdown(ctx); err != nil {
