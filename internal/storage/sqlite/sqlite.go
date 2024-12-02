@@ -117,7 +117,7 @@ func (s *Storage) DeleteEntry(ctx context.Context, entryID int64) error {
 }
 
 // ListEntries retrieves all entries for a given userId from the entry table
-func (s *Storage) ListEntries(ctx context.Context, accountID int64) ([]*models.Entry, error) {
+func (s *Storage) ListEntries(ctx context.Context, accountID int64) ([]models.Entry, error) {
 	const op = "storage.sqlite.ListEntries"
 	query := `SELECT id, user_id, entry_type, entry_data, created_at, updated_at FROM entry WHERE account_id = ?`
 	rows, err := s.db.QueryContext(ctx, query, accountID)
@@ -126,15 +126,30 @@ func (s *Storage) ListEntries(ctx context.Context, accountID int64) ([]*models.E
 	}
 	defer rows.Close()
 
-	var entries []*models.Entry
+	var entries []models.Entry
 	for rows.Next() {
 		var entry models.Entry
 		if err := rows.Scan(&entry.ID, &entry.AccountId, &entry.EntryType, &entry.EntryData, &entry.CreatedAt, &entry.UpdatedAt); err != nil {
 			return nil, fmt.Errorf("%s: %w", op, err)
 		}
-		entries = append(entries, &entry)
+		// Check if the entry is empty before adding it to the slice
+		if !isEmptyEntry(entry) {
+			entries = append(entries, entry)
+		}
 	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+
 	return entries, nil
+}
+
+// Пример функции для проверки "пустых" записей
+func isEmptyEntry(entry models.Entry) bool {
+	// Определите логику, что означает "пустой" entry
+	// Например, проверка на пустое поле EntryData:
+	return entry.EntryData == ""
 }
 
 // StoreKeyPart inserts a new key part for a user into the encryption_key table
