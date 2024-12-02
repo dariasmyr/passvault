@@ -61,7 +61,9 @@ func main() {
 
 	router.Post("/save", save.New(log, storage, timeout))
 
-	router.Get("/{entryId}", get.New(log, storage, timeout))
+	router.Get("/get/{entry_id}", get.New(log, storage, timeout))
+
+	router.Get("/list", get.New(log, storage, timeout))
 
 	log.Info("starting server", slog.String("address", cfg.Address))
 
