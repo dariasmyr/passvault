@@ -132,10 +132,7 @@ func (s *Storage) ListEntries(ctx context.Context, accountID int64) ([]models.En
 		if err := rows.Scan(&entry.ID, &entry.AccountId, &entry.EntryType, &entry.EntryData, &entry.CreatedAt, &entry.UpdatedAt); err != nil {
 			return nil, fmt.Errorf("%s: %w", op, err)
 		}
-		// Check if the entry is empty before adding it to the slice
-		if !isEmptyEntry(entry) {
-			entries = append(entries, entry)
-		}
+		entries = append(entries, entry)
 	}
 
 	if err := rows.Err(); err != nil {
@@ -143,13 +140,6 @@ func (s *Storage) ListEntries(ctx context.Context, accountID int64) ([]models.En
 	}
 
 	return entries, nil
-}
-
-// Пример функции для проверки "пустых" записей
-func isEmptyEntry(entry models.Entry) bool {
-	// Определите логику, что означает "пустой" entry
-	// Например, проверка на пустое поле EntryData:
-	return entry.EntryData == ""
 }
 
 // StoreKeyPart inserts a new key part for a user into the encryption_key table
