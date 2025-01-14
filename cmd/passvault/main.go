@@ -11,6 +11,7 @@ import (
 	"passvault/config"
 	"passvault/internal/http-server/handlers/entry/get"
 	"passvault/internal/http-server/handlers/entry/save"
+	authrest "passvault/internal/http-server/middlewares/auth"
 	mwLogger "passvault/internal/http-server/middlewares/logger"
 	"passvault/internal/lib/logger/sl"
 	storage "passvault/internal/storage/sqlite"
@@ -53,6 +54,11 @@ func main() {
 
 	router := chi.NewRouter()
 
+	authMiddleware := authrest.New(slog.New(
+		slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}),
+	), cfg.Secret)
+
+	router.Use(authMiddleware)
 	router.Use(middleware.RequestID)
 	router.Use(middleware.Logger)
 	router.Use(mwLogger.New(log))
