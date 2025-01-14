@@ -9,10 +9,16 @@ import (
 	"time"
 )
 
+type GRPCConfig struct {
+	Port    int           `yaml:"port" env:"GRPC_PORT"`
+	Timeout time.Duration `yaml:"timeout" env:"GRPC_TIMEOUT"`
+}
+
 type Config struct {
-	Env         string `yaml:"env" env-default:"development"`
-	StoragePath string `yaml:"storage_path" env-required:"true"`
-	Secret      string `yaml:"secret" env-required:"true"`
+	Env         string     `yaml:"env" env-default:"development"`
+	GRPC        GRPCConfig `yaml:"grpc"`
+	StoragePath string     `yaml:"storage_path" env-required:"true"`
+	Secret      string     `yaml:"secret" env-required:"true"`
 	HTTPServer  `yaml:"http_server"`
 }
 
