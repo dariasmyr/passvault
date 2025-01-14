@@ -12,6 +12,7 @@ import (
 type Config struct {
 	Env         string `yaml:"env" env-default:"development"`
 	StoragePath string `yaml:"storage_path" env-required:"true"`
+	Secret      string `yaml:"secret" env-required:"true"`
 	HTTPServer  `yaml:"http_server"`
 }
 

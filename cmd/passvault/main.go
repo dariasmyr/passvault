@@ -27,12 +27,12 @@ const (
 func main() {
 	cfg := config.MustLoad()
 
-	storage, err := storage.New(cfg.StoragePath)
+	db, err := storage.New(cfg.StoragePath)
 	if err != nil {
 		panic(err)
 	}
 
-	defer storage.Close()
+	defer db.Close()
 
 	log := setupLogger(cfg.Env)
 
@@ -59,11 +59,11 @@ func main() {
 	router.Use(middleware.Recoverer)
 	router.Use(middleware.URLFormat)
 
-	router.Post("/save", save.New(log, storage, timeout))
+	router.Post("/save", save.New(log, db, timeout))
 
-	router.Get("/get/{entry_id}", get.New(log, storage, timeout))
+	router.Get("/get/{entry_id}", get.New(log, db, timeout))
 
-	router.Get("/list", get.New(log, storage, timeout))
+	router.Get("/list", get.New(log, db, timeout))
 
 	log.Info("starting server", slog.String("address", cfg.Address))
 
@@ -98,7 +98,7 @@ func main() {
 		return
 	}
 
-	if err := storage.Close(); err != nil {
+	if err := db.Close(); err != nil {
 		log.Error("failed to stop storage", sl.Err(err))
 	}
 
