@@ -11,6 +11,7 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 	"log/slog"
 	"passvault/config"
+	"passvault/internal/lib/logger/sl"
 	"time"
 )
 
@@ -78,4 +79,20 @@ func InterceptorLogger(l *slog.Logger) grpclog.Logger {
 	return grpclog.LoggerFunc(func(ctx context.Context, lvl grpclog.Level, msg string, fields ...any) {
 		l.Log(ctx, slog.Level(lvl), msg, fields...)
 	})
+}
+
+func (c *Client) RegisterClient(ctx context.Context, appName string, secret string, redirectUrl string) (appId int64, err error) {
+	const op = "grpc.RegisterClient"
+
+	resp, err := c.AuthClient.RegisterClient(ctx, &ssov1.RegisterClientRequest{
+		AppName:     appName,
+		Secret:      secret,
+		RedirectUrl: redirectUrl,
+	})
+	if err != nil {
+		c.log.Error("failed to register client", sl.Err(err))
+		return 0, err
+	}
+
+	return resp.AppId, nil
 }
