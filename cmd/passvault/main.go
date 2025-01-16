@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"log/slog"
@@ -9,6 +10,8 @@ import (
 	"os"
 	"os/signal"
 	"passvault/config"
+	"passvault/internal/clients/sso/grpc"
+	"passvault/internal/http-server/handlers/client/register"
 	"passvault/internal/http-server/handlers/entry/get"
 	"passvault/internal/http-server/handlers/entry/save"
 	authrest "passvault/internal/http-server/middlewares/auth"
@@ -25,6 +28,10 @@ const (
 	envProd  = "prod"
 )
 
+const (
+	grpcHost = "localhost"
+)
+
 func main() {
 	cfg := config.MustLoad()
 
@@ -37,12 +44,12 @@ func main() {
 
 	log := setupLogger(cfg.Env)
 
-	timeout := time.Duration(cfg.HTTPServer.Timeout) * time.Second
+	timeout := cfg.HTTPServer.Timeout * time.Second
 	if timeout == 0 {
 		timeout = 5 * time.Second
 	}
 
-	idleTimeout := time.Duration(cfg.HTTPServer.IdleTimeout) * time.Second
+	idleTimeout := cfg.HTTPServer.IdleTimeout * time.Second
 	if idleTimeout == 0 {
 		idleTimeout = 60 * time.Second
 	}
@@ -51,6 +58,12 @@ func main() {
 
 	log.Info("initializing server", slog.String("address", cfg.Address))
 	log.Debug("logger debug mode enabled")
+
+	ctx, grpcClient, err := grpc.New(log, fmt.Sprintf("localhost:%d", cfg.GRPC.Port), cfg.GRPC.Timeout, cfg.GRPC.RetriesCount)
+	if err != nil {
+		log.Error("failed to create gRPC client", "error", err)
+		os.Exit(1)
+	}
 
 	router := chi.NewRouter()
 
@@ -70,6 +83,8 @@ func main() {
 	router.Get("/get/{entry_id}", get.New(log, db, timeout))
 
 	router.Get("/list", get.New(log, db, timeout))
+
+	router.Get("/register", register.New(log, grpcClient, timeout))
 
 	log.Info("starting server", slog.String("address", cfg.Address))
 
