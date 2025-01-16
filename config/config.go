@@ -10,8 +10,9 @@ import (
 )
 
 type GRPCConfig struct {
-	Port    int           `yaml:"port" env:"GRPC_PORT"`
-	Timeout time.Duration `yaml:"timeout" env:"GRPC_TIMEOUT"`
+	Port         int           `yaml:"port" env:"GRPC_PORT"`
+	Timeout      time.Duration `yaml:"timeout" env-default:"5s"`
+	RetriesCount int           `yaml:"reties_count" env-default:"60s"`
 }
 
 type Config struct {
