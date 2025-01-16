@@ -32,7 +32,7 @@ func New(
 
 	cfg := config.MustLoad()
 
-	ctx, cancelCtx := context.WithTimeout(context.Background(), cfg.Timeout)
+	ctx, cancelCtx := context.WithTimeout(context.Background(), cfg.GRPC.Timeout)
 	defer cancelCtx()
 
 	// options for grpcretry interceptor
