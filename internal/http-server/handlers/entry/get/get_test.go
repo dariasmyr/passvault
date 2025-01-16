@@ -11,8 +11,7 @@ import (
 	"os"
 	"passvault/internal/http-server/handlers/entry/get"
 	mocks "passvault/internal/http-server/handlers/entry/get/mocks"
-	authrest "passvault/internal/http-server/middlewares/auth"
-	"passvault/internal/lib/jwt"
+	"passvault/internal/http-server/handlers/utils"
 	"testing"
 	"time"
 
@@ -72,7 +71,7 @@ func TestGetHandler(t *testing.T) {
 			req := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/%s", tc.entryID), nil)
 			rr := httptest.NewRecorder()
 
-			Middleware(router, rr, req)
+			utils.TestMiddleware(router, rr, req)
 
 			resp := rr.Result()
 			defer resp.Body.Close()
@@ -89,19 +88,4 @@ func TestGetHandler(t *testing.T) {
 			mockEntryGetter.AssertExpectations(t)
 		})
 	}
-}
-
-func Middleware(handler http.Handler, w http.ResponseWriter, r *http.Request) {
-	secret := "test_secret"
-	mockToken := jwt.CreateMockToken(secret)
-
-	r.Header.Set("Authorization", fmt.Sprintf("Bearer %s", mockToken))
-
-	authMiddleware := authrest.New(slog.New(
-		slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}),
-	), secret)
-
-	handler = authMiddleware(handler)
-
-	handler.ServeHTTP(w, r)
 }

@@ -13,8 +13,7 @@ import (
 	"os"
 	"passvault/internal/http-server/handlers/entry/save"
 	mocks "passvault/internal/http-server/handlers/entry/save/mocks"
-	authrest "passvault/internal/http-server/middlewares/auth"
-	"passvault/internal/lib/jwt"
+	"passvault/internal/http-server/handlers/utils"
 	"testing"
 	"time"
 )
@@ -73,7 +72,7 @@ func TestSaveHandler(t *testing.T) {
 			rr := httptest.NewRecorder()
 
 			//handler.ServeHTTP(rr, req) // Call the handler wrapped in the middleware instead
-			Middleware(handler, rr, req)
+			utils.TestMiddleware(handler, rr, req)
 
 			require.Equal(t, rr.Code, http.StatusOK)
 
@@ -86,19 +85,4 @@ func TestSaveHandler(t *testing.T) {
 			require.Equal(t, tc.respError, resp.Error)
 		})
 	}
-}
-
-func Middleware(handler http.Handler, w http.ResponseWriter, r *http.Request) {
-	secret := "test_secret"
-	mockToken := jwt.CreateMockToken(secret)
-
-	r.Header.Set("Authorization", fmt.Sprintf("Bearer %s", mockToken))
-
-	authMiddleware := authrest.New(slog.New(
-		slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}),
-	), secret)
-
-	handler = authMiddleware(handler)
-
-	handler.ServeHTTP(w, r)
 }
