@@ -19,9 +19,8 @@ import (
 )
 
 type Client struct {
-	Cfg           *config.Config
-	AuthClient    ssov1.AuthClient
-	SessionClient ssov1.SessionsClient
+	authClient    ssov1.AuthClient
+	sessionClient ssov1.SessionsClient
 	log           *slog.Logger
 }
 
@@ -70,9 +69,8 @@ func New(
 	sessionClient := ssov1.NewSessionsClient(cc)
 
 	client := &Client{
-		Cfg:           cfg,
-		AuthClient:    authClient,
-		SessionClient: sessionClient,
+		authClient:    authClient,
+		sessionClient: sessionClient,
 		log:           log,
 	}
 
@@ -95,7 +93,7 @@ func (c *Client) RegisterClient(ctx context.Context, appName string, secret stri
 		slog.String("request_id", middleware.GetReqID(ctx)),
 	)
 
-	resp, err := c.AuthClient.RegisterClient(ctx, &ssov1.RegisterClientRequest{
+	resp, err := c.authClient.RegisterClient(ctx, &ssov1.RegisterClientRequest{
 		AppName:     appName,
 		Secret:      secret,
 		RedirectUrl: redirectUrl,
