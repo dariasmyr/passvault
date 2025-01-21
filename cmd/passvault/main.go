@@ -47,7 +47,7 @@ func main() {
 	log.Info("initializing server", slog.String("address", cfg.Address))
 	log.Debug("logger debug mode enabled")
 
-	ctx, grpcClient, err := grpc.New(log, cfg.GRPC.Address, cfg.GRPC.Timeout, cfg.GRPC.RetriesCount)
+	ctx, grpcClient, err := grpc.New(log, cfg.GRPC.Host, cfg.GRPC.Port, cfg.GRPC.Timeout, cfg.GRPC.RetriesCount)
 	if err != nil {
 		log.Error("failed to create gRPC client", "error", err)
 		os.Exit(1)

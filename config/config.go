@@ -10,7 +10,8 @@ import (
 )
 
 type GRPCConfig struct {
-	Address      string        `yaml:"address" env-default:"localhost:50051"`
+	Host         string        `yaml:"host" env-default:"localhost"`
+	Port         int           `yaml:"port" env-default:"50051"`
 	Timeout      time.Duration `yaml:"timeout" env-default:"5s"`
 	RetriesCount int           `yaml:"reties_count" env-default:"60s"`
 }
