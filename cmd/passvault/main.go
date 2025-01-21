@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"log/slog"
@@ -19,7 +18,6 @@ import (
 	"passvault/internal/lib/logger/sl"
 	storage "passvault/internal/storage/sqlite"
 	"syscall"
-	"time"
 )
 
 const (
@@ -44,22 +42,12 @@ func main() {
 
 	log := setupLogger(cfg.Env)
 
-	timeout := cfg.HTTPServer.Timeout * time.Second
-	if timeout == 0 {
-		timeout = 5 * time.Second
-	}
-
-	idleTimeout := cfg.HTTPServer.IdleTimeout * time.Second
-	if idleTimeout == 0 {
-		idleTimeout = 60 * time.Second
-	}
-
 	log = log.With(slog.String("env", cfg.Env))
 
 	log.Info("initializing server", slog.String("address", cfg.Address))
 	log.Debug("logger debug mode enabled")
 
-	ctx, grpcClient, err := grpc.New(log, fmt.Sprintf("localhost:%d", cfg.GRPC.Port), cfg.GRPC.Timeout, cfg.GRPC.RetriesCount)
+	ctx, grpcClient, err := grpc.New(log, cfg.GRPC.Address, cfg.GRPC.Timeout, cfg.GRPC.RetriesCount)
 	if err != nil {
 		log.Error("failed to create gRPC client", "error", err)
 		os.Exit(1)
@@ -78,13 +66,13 @@ func main() {
 	router.Use(middleware.Recoverer)
 	router.Use(middleware.URLFormat)
 
-	router.Post("/save", save.New(log, db, timeout))
+	router.Post("/save", save.New(log, db, cfg.HTTPServer.Timeout))
 
-	router.Get("/get/{entry_id}", get.New(log, db, timeout))
+	router.Get("/get/{entry_id}", get.New(log, db, cfg.HTTPServer.Timeout))
 
-	router.Get("/list", get.New(log, db, timeout))
+	router.Get("/list", get.New(log, db, cfg.HTTPServer.Timeout))
 
-	router.Get("/register", register.New(log, grpcClient, timeout))
+	router.Get("/register", register.New(log, grpcClient, cfg.HTTPServer.Timeout))
 
 	log.Info("starting server", slog.String("address", cfg.Address))
 
@@ -94,9 +82,9 @@ func main() {
 	srv := &http.Server{
 		Addr:         cfg.Address,
 		Handler:      router,
-		ReadTimeout:  timeout,
-		WriteTimeout: timeout,
-		IdleTimeout:  idleTimeout,
+		ReadTimeout:  cfg.HTTPServer.Timeout,
+		WriteTimeout: cfg.HTTPServer.Timeout,
+		IdleTimeout:  cfg.HTTPServer.IdleTimeout,
 	}
 
 	go func() {
@@ -110,7 +98,7 @@ func main() {
 	<-done
 	log.Info("stopping server")
 
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	ctx, cancel := context.WithTimeout(context.Background(), cfg.HTTPServer.ShutdownTimeout)
 	defer cancel()
 
 	if err := srv.Shutdown(ctx); err != nil {

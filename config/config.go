@@ -10,7 +10,7 @@ import (
 )
 
 type GRPCConfig struct {
-	Port         int           `yaml:"port" env:"GRPC_PORT"`
+	Address      string        `yaml:"address" env-default:"localhost:50051"`
 	Timeout      time.Duration `yaml:"timeout" env-default:"5s"`
 	RetriesCount int           `yaml:"reties_count" env-default:"60s"`
 }
@@ -24,9 +24,10 @@ type Config struct {
 }
 
 type HTTPServer struct {
-	Address     string        `yaml:"address" env-default:"0.0.0.0:8080"`
-	Timeout     time.Duration `yaml:"timeout" env-default:"5s"`
-	IdleTimeout time.Duration `yaml:"idle_timeout" env-default:"60s"`
+	Address         string        `yaml:"address" env-default:"localhost:8080"`
+	Timeout         time.Duration `yaml:"timeout" env-default:"5s"`
+	IdleTimeout     time.Duration `yaml:"idle_timeout" env-default:"60s"`
+	ShutdownTimeout time.Duration `yaml:"shutdown_timeout" env-default:"10s"`
 }
 
 func MustLoad() *Config {
