@@ -1,4 +1,4 @@
-env: "local"
+env: "prod"
 storage_path: "./storage/passvault.db"
 secret: "test_secret"
 grpc:
